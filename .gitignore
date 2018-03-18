@@ -1,1 +1,6 @@
+# go vendor files
 vendor
+
+# vscode debug files
+.vscode
+debug
