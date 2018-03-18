@@ -34,14 +34,14 @@ func Register(serviceName string, info *ServiceInfo) error {
 		return errors.New("service has been registered")
 	}
 
-	key := "service/" + serviceName
+	key := prefix + serviceName
 	val, err := json.Marshal(info)
 	if err != nil {
 		return err
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	resp, err := client.Grant(ctx, 5) // default ttl is 5
+	resp, err := client.Grant(ctx, ttl) // default ttl is 5
 	cancel()
 	if err != nil {
 		return err
@@ -76,9 +76,9 @@ func Deregister(serviceName string) error {
 		return errors.New("service is not registered")
 	}
 
-	key := "service/" + serviceName
+	key := prefix + serviceName
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-	_, err := client.Delete(ctx, serviceName)
+	_, err := client.Delete(ctx, key)
 	cancel()
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func Deregister(serviceName string) error {
 func (s *Service) HeartBeat() {
 	for {
 		select {
-		case <-time.After(5 * time.Second):
+		case <-time.After(time.Duration(ttl)*time.Second - delayTime):
 			ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 			_, err := client.KeepAliveOnce(ctx, s.LeaseID)
 			cancel()

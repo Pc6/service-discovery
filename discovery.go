@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"github.com/coreos/etcd/clientv3"
+	"github.com/coreos/etcd/mvcc/mvccpb"
 )
 
 var cacheInfo = make(map[string]*ServiceInfo)
@@ -16,15 +17,16 @@ func GetServiceInfo(serviceName string) *ServiceInfo {
 		log.Fatalln("getInfo arg error")
 	}
 
-	key := "services/" + serviceName
-
-	info, ok := cacheInfo[key]
+	info, ok := cacheInfo[serviceName]
 	if ok {
 		return info
 	}
 
+	key := prefix + serviceName
+
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	resp, err := client.Get(ctx, key)
+	cancel()
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -37,6 +39,8 @@ func GetServiceInfo(serviceName string) *ServiceInfo {
 		}
 	}
 
+	cacheInfo[serviceName] = s
+
 	return s
 }
 
@@ -46,31 +50,33 @@ func WatchServices(serviceNames ...string) error {
 			return errors.New("watch arg error")
 		}
 
-		key := "services" + serviceName
+		key := prefix + serviceName
 
-		ctx, cancel := context.WithTimeout(context.Background, requestTimeout)
+		ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 		rch := client.Watch(ctx, key)
 		cancel()
 
-		go watchEvents(rch)
+		go watchEvents(serviceName, rch)
 	}
 	return nil
 }
 
-func watchEvents(rch clientv3.WatchChan) {
+func watchEvents(serviceName string, rch clientv3.WatchChan) {
 	for wresp := range rch {
 		for _, ev := range wresp.Events {
 			switch ev.Type {
-			case "PUT":
+			case mvccpb.PUT:
 				s := new(ServiceInfo)
-				err := json.Unmarshal(ev.Value, s)
+				err := json.Unmarshal(ev.Kv.Value, s)
 				if err != nil {
 					log.Println("json unmarshal error")
 					continue
 				}
 				cacheInfo[serviceName] = s
-			case "DELETE":
+				log.Println("watch update event")
+			case mvccpb.DELETE:
 				delete(cacheInfo, serviceName)
+				log.Println("watch delete event")
 			}
 		}
 	}

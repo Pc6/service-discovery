@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"time"
 
@@ -14,11 +15,18 @@ var (
 var (
 	dialTimeout    = 5 * time.Second
 	requestTimeout = 2 * time.Second
+	delayTime      = 500 * time.Millisecond
 	endPoints      = []string{"localhost:2379"}
 )
 
+const (
+	prefix = "service/"
+	ttl    = int64(5)
+)
+
 func init() {
-	client, err := clientv3.New(clientv3.Config{
+	var err error
+	client, err = clientv3.New(clientv3.Config{
 		Endpoints:   endPoints,
 		DialTimeout: dialTimeout,
 	})
@@ -28,5 +36,25 @@ func init() {
 }
 
 func main() {
+	info := &ServiceInfo{
+		Name:    "test",
+		IP:      "192.168.0.1",
+		Port:    9090,
+		Version: 1,
+	}
+	Register("test", info)
+	time.Sleep(5 * time.Second)
 
+	info = GetServiceInfo("test")
+	fmt.Printf("info: %v\n", *info)
+
+	fmt.Println("before watch")
+	WatchServices("test")
+	time.Sleep(10 * time.Second)
+
+	Deregister("example")
+	fmt.Println("deregister service")
+
+	for {
+	}
 }
