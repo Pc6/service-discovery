@@ -1,6 +1,0 @@
-package: github.com/Pc6/service-discovery
-import:
-- package: github.com/coreos/etcd
-  version: ^3.3.2
-  subpackages:
-  - clientv3

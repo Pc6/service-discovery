@@ -36,6 +36,9 @@ func init() {
 }
 
 func main() {
+	fmt.Println("before watch")
+	WatchServices("test")
+
 	info := &ServiceInfo{
 		Name:    "test",
 		IP:      "192.168.0.1",
@@ -48,11 +51,10 @@ func main() {
 	info = GetServiceInfo("test")
 	fmt.Printf("info: %v\n", *info)
 
-	fmt.Println("before watch")
-	WatchServices("test")
-	time.Sleep(10 * time.Second)
-
-	Deregister("example")
+	err := Deregister("test")
+	if err != nil {
+		fmt.Println(err)
+	}
 	fmt.Println("deregister service")
 
 	for {

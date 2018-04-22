@@ -52,9 +52,9 @@ func WatchServices(serviceNames ...string) error {
 
 		key := prefix + serviceName
 
-		ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
-		rch := client.Watch(ctx, key)
-		cancel()
+		// ctx, cancel := context.WithCancel(context.Background())
+		rch := client.Watch(context.Background(), key, clientv3.WithPrefix())
+		// cancel()
 
 		go watchEvents(serviceName, rch)
 	}
