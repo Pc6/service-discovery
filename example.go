@@ -45,13 +45,16 @@ func main() {
 		Port:    9090,
 		Version: 1,
 	}
-	Register("test", info)
+	err := Register("test", info)
+	if err != nil {
+		fmt.Println(err)
+	}
 	time.Sleep(5 * time.Second)
 
 	info = GetServiceInfo("test")
 	fmt.Printf("info: %v\n", *info)
 
-	err := Deregister("test")
+	err = Deregister("test")
 	if err != nil {
 		fmt.Println(err)
 	}
